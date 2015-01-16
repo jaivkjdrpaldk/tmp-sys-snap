@@ -163,7 +163,7 @@ sub read_logs {
 		close ($FILE);		
 		
 		# reading line by line to split the sections might be faster
-		my $matchme = "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\n";
+		my $matchme = "^Process List:\n\nUSER[^\n]+COMMAND\n";
 		if($string =~ /^$matchme(.*)\nNetwork Connections\:$/sm){
         		my $baseString=$1;
 			@lines = split(/\n/, $baseString);

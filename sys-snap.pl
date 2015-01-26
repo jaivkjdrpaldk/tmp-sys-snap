@@ -7,9 +7,11 @@ use Switch;
 my $usage = <<"ENDTXT"; 
 USAGE: ./sys-snap.pl [options]
 Installation:
-	--install
+	--install : Creates, disowns, and drops 'sys-snap.pl --install' process into the background
 PRINTING:
-	--print <start-time end-time> <flag>: where time HH:MM, prints basic usage by default, v for verbose output 
+	--print <start-time end-time> <flag>: Where time HH:MM, prints basic usage by default, v for verbose output 
+	--check : Checks if sys-snap is installed
+	--kill : tries to kill process
 ENDTXT
 
 my $cmd_input;
@@ -21,11 +23,60 @@ if ($ARGV[0] =~ m/[A-Za-z0-9\-]*/) {
 switch ($cmd_input) {
 	case "--install" { &run_install; }
 	case "--print" { &snap_print_range($ARGV[1], $ARGV[2], $ARGV[3]); } 
+	case "--check" { &check_status; exit; }
+	case "--kill" { &kill}
 	else { print $usage; exit }
 }
 
 exit;
 
+sub kill {
+	print "Test\n";
+}
+
+# needs to be cleaned up
+sub check_status {
+
+	my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --install"`;
+	my @pids = split("\n",$ps_info);
+	my $current_script = $$;
+	my $running_pid;	
+
+	if(@pids > 2) {
+		print "Multiple sys-snap instances running?\n";
+	} 
+	elsif (@pids eq 2) {
+		if( $pids[0] =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s+--install.*/ ) {
+			my $tmp_pid = $1; 
+			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }	
+		}
+		
+		if( $pids[1] =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s+--install.*/ ) {
+			my $tmp_pid = $1;
+			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }
+		}
+		if( !defined($running_pid) ) { print "Could not find PID, process might be running.\n"; return "on"; }
+	 
+		
+		print "Sys-snap is running, PID: $running_pid\n";
+		return $running_pid;
+	}
+	elsif (defined $pids[0]) {
+		
+		#my $check_process = `ps -e -o pid | grep "[s]ys-snap.pl --check"`;
+		#if $
+		if( $pids[0] =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s+--install.*/) {
+			if ($1 != $current_script) { 	
+				print "Sys-snap is running, PID: $1\n"; return $running_pid;
+			}
+		}
+	}
+	else { print "Sys-snap not currently running.\n"; return "off"; }
+
+	print "Failed PID checks\n"; 
+	return "off";
+}
+	
 # pro-scope 255 ACM caffeine
 {
 sub snap_print_range {
@@ -250,12 +301,14 @@ sub get_range {
 {
 sub run_install {
 
-#my $is_running = `ps aux | grep '^\.\/sys-snap.pl --install\\|^perl'`;
-my $is_running = `ps aux | grep '^root.*[s]ys-snap.pl --install'`;
 
-# when you run the script with --install it will match itself, so if there are 2 matches then there is itself
-# and probably an already running process 
-if($is_running =~ m/.*\n.*\n/m) { print "Sys-snap is already running\n"; exit; }
+#my $is_running = `ps aux | grep '^root.*[s]ys-snap.pl --install'`;
+#if($is_running =~ m/.*\n.*\n/m) { print "Sys-snap is already running\n"; exit; }
+
+my $tmp_check = &check_status;
+if( $tmp_check =~ /[\d]+/ ) { exit; } 
+else { print "Starting install...\n"; }
+
 
 use File::Path qw(rmtree);
 use POSIX qw(setsid);

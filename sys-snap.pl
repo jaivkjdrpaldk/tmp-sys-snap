@@ -37,7 +37,9 @@ sub kill {
 # needs to be cleaned up
 sub check_status {
 
+	delete @ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
 	my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --install"`;
+	
 	my @pids = split("\n",$ps_info);
 	my $current_script = $$;
 	my $running_pid;	
@@ -66,10 +68,12 @@ sub check_status {
 		#my $check_process = `ps -e -o pid | grep "[s]ys-snap.pl --check"`;
 		#if $
 		if( $pids[0] =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s+--install.*/) {
-			if ($1 != $current_script) { 	
+
+			my $check_self = $1;
+			if ($check_self != $current_script) { 	
 				print "Sys-snap is running, PID: $1\n"; return $running_pid;
-			}
-		}
+			} elsif( $check_self eq $current_script ) { print "Sys-snap is not currently running\n"; return "off"; }
+		} 
 	}
 	else { print "Sys-snap not currently running.\n"; return "off"; }
 

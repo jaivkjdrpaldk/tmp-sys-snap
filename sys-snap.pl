@@ -24,18 +24,57 @@ switch ($cmd_input) {
 	case "--install" { &run_install; }
 	case "--print" { &snap_print_range($ARGV[1], $ARGV[2], $ARGV[3]); } 
 	case "--check" { &check_status; exit; }
-	case "--kill" { &kill}
+	case "--kill" { &kill; exit;}
 	else { print $usage; exit }
 }
 
 exit;
 
 sub kill {
-	print "Test\n";
+	my $pid;
+	# prevent check_status from printing to terminal
+	{
+	local *STDOUT;
+	open (STDOUT, '>', '/dev/null'); 
+	$pid = &check_status();
+	}
+	if ($pid =~ /[\d+]/) {
+		#print "Test: $pid\n";
+		delete @ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
+		my $running_pid = "false";
+		my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --install"`;
+		if ($ps_info =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s++--install.*/) {
+			$running_pid = $1;
+		}
+		print "Current process: $ps_info";
+		print "Kill this process (y/n)?:";
+
+		my $choice = "0";
+		$choice = <STDIN>;
+		while ($choice !~ /[yn]/i ) {
+			print "Kill this process (y/n)?:"; 
+			$choice = <STDIN>;
+			chomp ($choice);
+		}
+		if($choice =~ /[y]/i) {
+			print "Killing $pid\n"; 
+			`kill -3 $pid`; 
+			exit; 
+		}
+		else { print "Exiting...\n"; exit; }
+	
+	}
+	else {
+		print "Sys-snap is not currently running\n";
+	}
 }
 
 # needs to be cleaned up
+# prints status by default, send 0 for silent
 sub check_status {
+
+	my $print_status = 1;
+	$print_status = shift if @_;
 
 	delete @ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
 	my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --install"`;
@@ -69,10 +108,10 @@ sub check_status {
 		#if $
 		if( $pids[0] =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s+--install.*/) {
 
-			my $check_self = $1;
-			if ($check_self != $current_script) { 	
-				print "Sys-snap is running, PID: $1\n"; return $running_pid;
-			} elsif( $check_self eq $current_script ) { print "Sys-snap is not currently running\n"; return "off"; }
+			my $tmp_pid = $1;
+			if ($tmp_pid != $current_script) { 	
+				print "Sys-snap is running, PID: $tmp_pid\n"; return $tmp_pid;
+			} elsif( $tmp_pid eq $current_script ) { print "Sys-snap is not currently running\n"; return "off"; }
 		} 
 	}
 	else { print "Sys-snap not currently running.\n"; return "off"; }

@@ -56,7 +56,7 @@ sub kill {
 			$choice = <STDIN>;
 			chomp ($choice);
 		}
-		if($choice =~ /[y]/i) {
+		if($choice =~ /[y]/i) { 
 			print "Killing $pid\n"; 
 			`kill -3 $pid`; 
 			exit; 
@@ -70,7 +70,6 @@ sub kill {
 }
 
 # needs to be cleaned up
-# prints status by default, send 0 for silent
 sub check_status {
 
 	my $print_status = 1;
@@ -350,8 +349,21 @@ sub run_install {
 
 my $tmp_check = &check_status;
 if( $tmp_check =~ /[\d]+/ ) { exit; } 
-else { print "Starting install...\n"; }
-
+else 
+{ 
+	print "Install sys-snap to '/root/system-snapshot/' (y/n)?:";
+	my $choice = "0";
+        $choice = <STDIN>;
+        while ($choice !~ /[yn]/i ) {
+        	print "Install sys-snap to '/root/system-snapshot/' (y/n)?:";
+                $choice = <STDIN>;
+                chomp ($choice);
+	}
+        if($choice =~ /[y]/i) { 
+		print "Starting install...\n";  
+	}
+        else { print "Exiting...\n"; exit; }	
+}
 
 use File::Path qw(rmtree);
 use POSIX qw(setsid);

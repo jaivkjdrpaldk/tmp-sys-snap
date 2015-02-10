@@ -1,5 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
+use warnings;
 use strict;
 use Switch;
 #use POSIX qw(setsid);
@@ -86,12 +87,12 @@ sub check_status {
 		print "Multiple sys-snap instances running?\n";
 	} 
 	elsif (@pids eq 2) {
-		if( $pids[0] =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s+--install.*/ ) {
+		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/ ) {
 			my $tmp_pid = $1; 
 			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }	
 		}
 		
-		if( $pids[1] =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s+--install.*/ ) {
+		if( $pids[1] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/ ) {
 			my $tmp_pid = $1;
 			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }
 		}
@@ -105,7 +106,7 @@ sub check_status {
 		
 		#my $check_process = `ps -e -o pid | grep "[s]ys-snap.pl --check"`;
 		#if $
-		if( $pids[0] =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s+--install.*/) {
+		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/) {
 
 			my $tmp_pid = $1;
 			if ($tmp_pid != $current_script) { 	

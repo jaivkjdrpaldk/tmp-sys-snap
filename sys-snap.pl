@@ -44,7 +44,7 @@ sub kill {
 		delete @ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
 		my $running_pid = "false";
 		my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --install"`;
-		if ($ps_info =~ /^\s*([0-9]+)\s+root.*sys-snap\.pl\s++--install.*/) {
+		if ($ps_info =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/ ) {
 			$running_pid = $1;
 		}
 		print "Current process: $ps_info";
@@ -269,7 +269,6 @@ sub read_logs {
 			
 			if (defined $user && defined $cpu && defined $memory && defined $command) {
 				
-				# 
 				if ($user !~ m/[a-zA-Z0-9_\.\-]+/) { next; }
 				if ($cpu !~ m/[0-9\.]+/ && $memory !~ m/[0-9\.]+/) { next; }
 				$basic_usage{$user}{'memory'} += $memory;

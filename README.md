@@ -83,30 +83,27 @@ perl sys-snap.pl --print 1:00 2:00 v
 Example output from the above command:
 ***
 user: dovecot         
-	memory-score: 84.30       memory-score:
-		M: 84.30 proc: \_ dovecot/auth
-		M: 0.00 proc: \_ dovecot/anvil
-
-	cpu-score: 6.90      
-		C: 6.90 proc: \_ dovecot/auth
-		C: 0.00 proc: \_ dovecot/anvil
-		
+...memory-score: 84.30       memory-score:
+......M: 84.30 proc: \_ dovecot/auth
+......M: 0.00 proc: \_ dovecot/anvil
+...cpu-score: 6.90      
+......C: 6.90 proc: \_ dovecot/auth
+......C: 0.00 proc: \_ dovecot/anvil	
 user: munin           
-	memory-score: 6.70        memory-score:
-		M: 3.30 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-update
-		M: 1.80 proc: \_ /usr/local/cpanel/3rdparty/share/munin/munin-update [Munin::Master::UpdateWorker<server.com;host.server.com>]
-		M: 0.70 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-limits
-		M: 0.60 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-graph --cron
-		M: 0.30 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-html
-		M: 0.00 proc: \_ /bin/sh /usr/local/cpanel/3rdparty/perl/514/bin/munin-cron
-
-	cpu-score: 106.40    
-		C: 59.90 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-update
-		C: 21.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-limits
-		C: 17.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-graph --cron
-		C: 8.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-html
-		C: 0.50 proc: \_ /usr/local/cpanel/3rdparty/share/munin/munin-update [Munin::Master::UpdateWorker<server.com;host.server.com>]
-		C: 0.00 proc: \_ /bin/sh /usr/local/cpanel/3rdparty/perl/514/bin/munin-cron
+...memory-score: 6.70        memory-score:
+......M: 3.30 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-update
+......M: 1.80 proc: \_ /usr/local/cpanel/3rdparty/share/munin/munin-update [Munin::Master::UpdateWorker<server.com;host.server.com>]
+......M: 0.70 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-limits
+......M: 0.60 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-graph --cron
+......M: 0.30 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-html
+......M: 0.00 proc: \_ /bin/sh /usr/local/cpanel/3rdparty/perl/514/bin/munin-cron
+...cpu-score: 106.40    
+......C: 59.90 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-update
+......C: 21.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-limits
+......C: 17.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-graph --cron
+......C: 8.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-html
+......C: 0.50 proc: \_ /usr/local/cpanel/3rdparty/share/munin/munin-update [Munin::Master::UpdateWorker<server.com;host.server.com>]
+......C: 0.00 proc: \_ /bin/sh /usr/local/cpanel/3rdparty/perl/514/bin/munin-cron
 ***
 
 This command will check if sys-snap is running.

@@ -5,12 +5,12 @@ use strict;
 use Switch;
 #use POSIX qw(setsid);
 
-my $usage = <<"ENDTXT"; 
+my $usage = <<"ENDTXT";
 USAGE: ./sys-snap.pl [options]
 Installation:
 	--install : Creates, disowns, and drops 'sys-snap.pl --install' process into the background
 PRINTING:
-	--print <start-time end-time> <flag>: Where time HH:MM, prints basic usage by default, v for verbose output 
+	--print <start-time end-time> <flag>: Where time HH:MM, prints basic usage by default, v for verbose output
 	--check : Checks if sys-snap is installed
 	--kill : tries to kill process
 ENDTXT
@@ -23,7 +23,7 @@ if ($ARGV[0] =~ m/[A-Za-z0-9\-]*/) {
 
 switch ($cmd_input) {
 	case "--install" { &run_install; }
-	case "--print" { &snap_print_range($ARGV[1], $ARGV[2], $ARGV[3]); } 
+	case "--print" { &snap_print_range($ARGV[1], $ARGV[2], $ARGV[3]); }
 	case "--check" { &check_status; exit; }
 	case "--kill" { &kill; exit;}
 	else { print $usage; exit }
@@ -36,7 +36,7 @@ sub kill {
 	# prevent check_status from printing to terminal
 	{
 	local *STDOUT;
-	open (STDOUT, '>', '/dev/null'); 
+	open (STDOUT, '>', '/dev/null');
 	$pid = &check_status();
 	}
 	if ($pid =~ /[\d+]/) {
@@ -53,17 +53,16 @@ sub kill {
 		my $choice = "0";
 		$choice = <STDIN>;
 		while ($choice !~ /[yn]/i ) {
-			print "Kill this process (y/n)?:"; 
+			print "Kill this process (y/n)?:";
 			$choice = <STDIN>;
 			chomp ($choice);
 		}
-		if($choice =~ /[y]/i) { 
-			print "Killing $pid\n"; 
-			`kill -3 $pid`; 
-			exit; 
+		if($choice =~ /[y]/i) {
+			print "Killing $pid\n";
+			`kill -3 $pid`;
+			exit;
 		}
 		else { print "Exiting...\n"; exit; }
-	
 	}
 	else {
 		print "Sys-snap is not currently running\n";
@@ -78,48 +77,48 @@ sub check_status {
 
 	delete @ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
 	my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --install"`;
-	
+
 	my @pids = split("\n",$ps_info);
 	my $current_script = $$;
-	my $running_pid;	
+	my $running_pid;
 
 	if(@pids > 2) {
 		print "Multiple sys-snap instances running?\n";
-	} 
+	}
 	elsif (@pids eq 2) {
 		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/ ) {
-			my $tmp_pid = $1; 
-			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }	
+			my $tmp_pid = $1;
+			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }
 		}
-		
+
 		if( $pids[1] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/ ) {
 			my $tmp_pid = $1;
 			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }
 		}
 		if( !defined($running_pid) ) { print "Could not find PID, process might be running.\n"; return "on"; }
-	 
-		
+
+
 		print "Sys-snap is running, PID: $running_pid\n";
 		return $running_pid;
 	}
 	elsif (defined $pids[0]) {
-		
+
 		#my $check_process = `ps -e -o pid | grep "[s]ys-snap.pl --check"`;
 		#if $
 		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/) {
 
 			my $tmp_pid = $1;
-			if ($tmp_pid != $current_script) { 	
+			if ($tmp_pid != $current_script) {
 				print "Sys-snap is running, PID: $tmp_pid\n"; return $tmp_pid;
 			} elsif( $tmp_pid eq $current_script ) { print "Sys-snap is not currently running\n"; return "off"; }
-		} 
+		}
 	}
 	else { print "Sys-snap not currently running.\n"; return "off"; }
 
-	print "Failed PID checks\n"; 
+	print "Failed PID checks\n";
 	return "off";
 }
-	
+
 # pro-scope 255 ACM caffeine
 {
 sub snap_print_range {
@@ -147,7 +146,7 @@ if ( ($time1_hour, $time1_minute) = $time1 =~ m{^(\d{1,2}):(\d{2})$}){
 	if($time1_hour >= 0 && $time1_hour <= 23 && $time1_minute >= 0 && $time1_minute <= 59) {
 		#print "$time1_hour $time1_minute\n";
 	} else { print "Fail: Fictitious time.\n"; exit; }
-	
+
 } else { print "Fail: Could not parse start time\n"; exit; }
 
 if ( ($time2_hour, $time2_minute) = $time2 =~ m{(\d{1,2}):(\d{2})}){
@@ -181,12 +180,12 @@ if ( !(defined $detail_level) || $detail_level eq 'b') { &run_basic(\%basic_usag
 
 # adding up memory and CPU usage per user's process
 foreach my $user (sort keys %process_list_data) {
-	
+
 	foreach my $process (sort keys %{ $process_list_data{$user} }) {
 
 		$users_wcpu_process{$user}{$process} += $process_list_data{$user}{$process}{'cpu'};
-		$users_wmemory_process{$user}{$process} += $process_list_data{$user}{$process}{'memory'};  
-	}  
+		$users_wmemory_process{$user}{$process} += $process_list_data{$user}{$process}{'memory'};
+	}
 }
 
 # create hash of sorted arrays per user
@@ -200,27 +199,27 @@ foreach my $user (sort keys %users_wmemory_process) {
 
 	my @sorted_mem = sort { $users_wmemory_process{$user}{$b} <=>
 			     $users_wmemory_process{$user}{$a} } keys %{$users_wmemory_process{$user}};
-	
+
 	# supposedly hash keys can't be tainted so printf should? be ok here, but maybe I'm misunderstanding this. Using print on unsanitized process string just in case
 	# # https://www.securecoding.cert.org/confluence/display/perl/IDS01-PL.+Use+taint+mode+while+being+aware+of+its+limitations
-	
-	printf "user: %-15s \n\tmemory-score: %-11.2f memory-score:\n", $user, $basic_usage{$user}{'memory'};
 
-	for (@sorted_mem) { 
+	printf "user: %-15s \n\tmemory-score: %-11.2f\n", $user, $basic_usage{$user}{'memory'};
+
+	for (@sorted_mem) {
 		printf "\t\tM: %4.2f proc: ", $users_wmemory_process{$user}{$_};
-		print "$_\n"; 
-	}  
+		print "$_\n";
+	}
 
 	printf "\n\tcpu-score: %-10.2f\n", $basic_usage{$user}{'cpu'};
 
-	for (@sorted_cpu) { 
+	for (@sorted_cpu) {
 		printf "\t\tC: %4.2f proc: ", $users_wcpu_process{$user}{$_};
-		print "$_\n"; 
+		print "$_\n";
 	}
 	print "\n";
 }
 
-##################### 
+#####################
 # Operator, I need an
 exit;
 #####################
@@ -251,36 +250,36 @@ sub read_logs {
 	foreach my $file_name (@snap_log_files) {
 
 		my @lines;
-		
+
 		open (my $FILE, "<", $file_name) or next; #die "Couldn't open file: $!";
 		my $string = join("", <$FILE>);
-		close ($FILE);		
-		
+		close ($FILE);
+
 		# reading line by line to split the sections might be faster
 		my $matchme = "^Process List:\n\nUSER[^\n]+COMMAND\n";
 		if($string =~ /^$matchme(.*)\nNetwork Connections\:$/sm){
         		my $baseString=$1;
 			@lines = split(/\n/, $baseString);
 		}
-		
+
 		foreach my $l (@lines) {
 			my ($user, $cpu, $memory, $command);
 			($user, $cpu, $memory, $command) = $l =~  m{^(\w+)\s+\d+\s+(\d{1,2}\.\d)\s+(\d{1,2}\.\d).*\d{1,2}:\d{2}\s+(.*)$};
-			
+
 			if (defined $user && defined $cpu && defined $memory && defined $command) {
-				
+
 				if ($user !~ m/[a-zA-Z0-9_\.\-]+/) { next; }
 				if ($cpu !~ m/[0-9\.]+/ && $memory !~ m/[0-9\.]+/) { next; }
 				$basic_usage{$user}{'memory'} += $memory;
 				$basic_usage{$user}{'cpu'} += $cpu;
 				# agrigate hash? of commands - roll object
-				
+
 				# if the process is the same, accumulate it, if not create it
 				# assuming if we have a memory value for a command, we should have a cpu value - nothing can ever go wrong here :smiley face:
 				if (defined $process_list_data{$user}{$command}{'memory'}) {
 					$process_list_data{$user}{$command}{'memory'} += $memory;
 					$process_list_data{$user}{$command}{'cpu'} += $cpu;
-				} 
+				}
 				else {
 					$process_list_data{$user}{$command}{'cpu'} = $cpu;
 					$process_list_data{$user}{$command}{'memory'} = $memory;
@@ -292,7 +291,7 @@ sub read_logs {
 }
 
 # returns ordered array of stings that represent file location
-# could create $accuracy variable to run modulo integers for faster processing at expense of accuracy 
+# could create $accuracy variable to run modulo integers for faster processing at expense of accuracy
 sub get_range {
 
 	my $root_dir = shift;
@@ -304,20 +303,20 @@ sub get_range {
 	my $time1 = "$time1_hour:$time1_minute";
 	my $time2 = "$time2_hour:$time2_minute";
 
-	my @snap_log_files;	
+	my @snap_log_files;
 	my ($file_hour, $file_minute);
 	# Even if we want to ignore the date, Time::Piece will create one. This is probably easier than rolling a custom time cycle for over night periods such as 23:57 0:45,
 	# and should make modification easier if longer date ranges are added too.
 	# Mind the date format 'DAY MONTH YEAR(XXXX)'
  	my $start_time = Time::Piece->strptime("2-2-1993 $time1", "%d-%m-%Y %H:%M");
 	my $end_time;
-	
+
 	if($time1_hour < $time2_hour || ($time1_hour == $time2_hour && $time1_minute < $time2_minute)) {
 		$end_time = Time::Piece->strptime("2-2-1993 $time2", "%d-%m-%Y %H:%M");
 	} else {
 		$end_time = Time::Piece->strptime("3-2-1993 $time2", "%d-%m-%Y %H:%M");
 	}
-	
+
 	while ($start_time <= $end_time ) {
 
 		#print $start_time->strftime('%H:%M') . "\n";
@@ -328,7 +327,7 @@ sub get_range {
 		$file_hour =~ s/^0(\d)$/$1/;
 		#print "$root_dir$snapshot_dir/$file_hour/$file_minute.log\n";
 		push @snap_log_files, "$root_dir$snapshot_dir/$file_hour/$file_minute.log";
-		$start_time += 60;	
+		$start_time += 60;
 	}
 
 	return @snap_log_files;
@@ -348,9 +347,9 @@ sub run_install {
 #if($is_running =~ m/.*\n.*\n/m) { print "Sys-snap is already running\n"; exit; }
 
 my $tmp_check = &check_status;
-if( $tmp_check =~ /[\d]+/ ) { exit; } 
-else 
-{ 
+if( $tmp_check =~ /[\d]+/ ) { exit; }
+else
+{
 	print "Install sys-snap to '/root/system-snapshot/' (y/n)?:";
 	my $choice = "0";
         $choice = <STDIN>;
@@ -359,10 +358,10 @@ else
                 $choice = <STDIN>;
                 chomp ($choice);
 	}
-        if($choice =~ /[y]/i) { 
-		print "Starting install...\n";  
+        if($choice =~ /[y]/i) {
+		print "Starting install...\n";
 	}
-        else { print "Exiting...\n"; exit; }	
+        else { print "Exiting...\n"; exit; }
 }
 
 use File::Path qw(rmtree);
@@ -410,7 +409,7 @@ if ( !-d $root_dir ) {
     die "$root_dir is not a directory\n";
 }
 elsif ( !-w $root_dir ) {
-   die "$root_dir is not writable\n"; 
+   die "$root_dir is not writable\n";
 }
 
 if ( -d "$root_dir/system-snapshot" ) {

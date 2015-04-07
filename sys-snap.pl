@@ -7,12 +7,11 @@ use Switch;
 
 my $usage = <<"ENDTXT";
 USAGE: ./sys-snap.pl [options]
-Installation:
-	--install : Creates, disowns, and drops 'sys-snap.pl --install' process into the background
-PRINTING:
-	--print <start-time end-time> <flag>: Where time HH:MM, prints basic usage by default, v for verbose output
-	--check : Checks if sys-snap is installed
-	--kill : tries to kill process
+	--start : Creates, disowns, and drops 'sys-snap.pl --start' process into the background
+	--print <start-time end-time> <flag>: Where time HH:MM, prints basic usage by default, v for verbose
+	--check : Checks if sys-snap is running
+	--stop : tries to kill process
+	--loadavg <start-time end-time> <flag>: Where time HH:MM, prints load average for time period, v for verbose
 ENDTXT
 
 my $cmd_input;
@@ -22,14 +21,44 @@ if ($ARGV[0] =~ m/[A-Za-z0-9\-]*/) {
 }
 
 switch ($cmd_input) {
-	case "--install" { &run_install; }
+	case "--start" { &run_install; }
 	case "--print" { &snap_print_range($ARGV[1], $ARGV[2], $ARGV[3]); }
 	case "--check" { &check_status; exit; }
-	case "--kill" { &kill; exit;}
+	case "--stop" { &kill; exit;}
+	case "--loadavg" { &loadavg($ARGV[1], $ARGV[2]); }
 	else { print $usage; exit }
 }
 
-exit;
+sub loadavg {
+
+	my $time1 = shift;
+	my $time2 = shift;
+	my $root_dir = "/root";
+	my $snapshot_dir = "/system-snapshot";
+	my ($time1_hour, $time1_minute, $time2_hour, $time2_minute) = &parse_check_time($time1, $time2);
+
+	my @snap_log_files = &get_range($root_dir, $snapshot_dir, $time1_hour, $time1_minute, $time2_hour, $time2_minute);
+
+	print "Time\t1min-avg\t5min-avg\t15min-avg\n";
+	foreach my $file_name (@snap_log_files) {
+
+# load information is currently printed to the first line
+# only need to read first line
+		open (my $FILE, "<", $file_name) or next; #die "Couldn't open file: $!";
+		my $string = <$FILE>;
+		close ($FILE);
+
+#my ($user, $cpu, $memory, $command);
+		my ($avg1min, $avg5min, $avg15min, $hour, $min);
+		($hour, $min, $avg1min, $avg5min, $avg15min) = $string =~ m{^\d+\s+(\d+)\s+(\d+)\s+Load Average: (\d+\.\d+)\s(\d+\.\d+)\s(\d+\.\d+)\s.*$};
+		#($user, $cpu, $memory, $command) = $l =~  m{^(\w+)\s+\d+\s+(\d{1,2}\.\d)\s+(\d{1,2}\.\d).*\d{1,2}:\d{2}\s+(.*)$};
+
+		if (defined $hour && defined $min & defined $avg1min && defined $avg5min && defined $avg15min) {
+			$min = "0" . $min if ($min =~ m{^\d$});
+			print "$hour:$min\t$avg1min\t\t$avg5min\t\t$avg15min\n";
+		}
+	}
+}
 
 sub kill {
 	my $pid;
@@ -43,22 +72,22 @@ sub kill {
 		#print "Test: $pid\n";
 		delete @ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
 		my $running_pid = "false";
-		my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --install"`;
-		if ($ps_info =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/ ) {
+		my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --start"`;
+		if ($ps_info =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--start/ ) {
 			$running_pid = $1;
 		}
 		print "Current process: $ps_info";
-		print "Kill this process (y/n)?:";
+		print "Stop this process (y/n)?:";
 
 		my $choice = "0";
 		$choice = <STDIN>;
 		while ($choice !~ /[yn]/i ) {
-			print "Kill this process (y/n)?:";
+			print "Stop this process (y/n)?:";
 			$choice = <STDIN>;
 			chomp ($choice);
 		}
 		if($choice =~ /[y]/i) {
-			print "Killing $pid\n";
+			print "Stopping $pid\n";
 			`kill -3 $pid`;
 			exit;
 		}
@@ -76,7 +105,7 @@ sub check_status {
 	$print_status = shift if @_;
 
 	delete @ENV{'PATH', 'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
-	my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --install"`;
+	my $ps_info = `ps -e -o pid,user,args | grep "[s]ys-snap.pl --start"`;
 
 	my @pids = split("\n",$ps_info);
 	my $current_script = $$;
@@ -86,12 +115,12 @@ sub check_status {
 		print "Multiple sys-snap instances running?\n";
 	}
 	elsif (@pids eq 2) {
-		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/ ) {
+		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--start/ ) {
 			my $tmp_pid = $1;
 			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }
 		}
 
-		if( $pids[1] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/ ) {
+		if( $pids[1] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--start/ ) {
 			my $tmp_pid = $1;
 			if($tmp_pid != $current_script) { $running_pid=$tmp_pid; }
 		}
@@ -105,7 +134,7 @@ sub check_status {
 
 		#my $check_process = `ps -e -o pid | grep "[s]ys-snap.pl --check"`;
 		#if $
-		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--install/) {
+		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--start/) {
 
 			my $tmp_pid = $1;
 			if ($tmp_pid != $current_script) {
@@ -119,6 +148,33 @@ sub check_status {
 	return "off";
 }
 
+sub parse_check_time {
+
+	my $time1 = shift;
+	my $time2 = shift;
+
+	if (!defined $time1 || !defined $time2) { print "Need 2 parameters, \"./snap-print start-time end-time\"\n"; exit;}
+
+	my ($time1_hour, $time1_minute, $time2_hour, $time2_minute);
+
+	if ( ($time1_hour, $time1_minute) = $time1 =~ m{^(\d{1,2}):(\d{2})$}){
+		if($time1_hour >= 0 && $time1_hour <= 23 && $time1_minute >= 0 && $time1_minute <= 59) {
+#print "$time1_hour $time1_minute\n";
+		} else { print "Fail: Fictitious time.\n"; exit; }
+
+	} else { print "Fail: Could not parse start time\n"; exit; }
+
+	if ( ($time2_hour, $time2_minute) = $time2 =~ m{(\d{1,2}):(\d{2})}){
+		if($time2_hour >= 0 && $time2_hour <= 23 && $time2_minute >= 0 && $time2_minute <= 59) {
+			#$time2_hour $time2_minute\n";
+		} else { print "Fail: Fictitious time.\n"; exit; }
+
+	} else { print "Fail: Could not parse end time\n"; exit; }
+
+	if (defined $time1_hour && defined $time2_hour ) { return ($time1_hour, $time1_minute, $time2_hour, $time2_minute); }
+	return 0;
+
+}
 # pro-scope 255 ACM caffeine
 {
 sub snap_print_range {
@@ -200,9 +256,6 @@ foreach my $user (sort keys %users_wmemory_process) {
 	my @sorted_mem = sort { $users_wmemory_process{$user}{$b} <=>
 			     $users_wmemory_process{$user}{$a} } keys %{$users_wmemory_process{$user}};
 
-	# supposedly hash keys can't be tainted so printf should? be ok here, but maybe I'm misunderstanding this. Using print on unsanitized process string just in case
-	# # https://www.securecoding.cert.org/confluence/display/perl/IDS01-PL.+Use+taint+mode+while+being+aware+of+its+limitations
-
 	printf "user: %-15s \n\tmemory-score: %-11.2f\n", $user, $basic_usage{$user}{'memory'};
 
 	for (@sorted_mem) {
@@ -219,13 +272,8 @@ foreach my $user (sort keys %users_wmemory_process) {
 	print "\n";
 }
 
-#####################
-# Operator, I need an
 exit;
-#####################
 
-
-# train BASIC every day
 sub run_basic {
 	my $tmp = shift;
 	my %basic_usage = %$tmp;
@@ -350,16 +398,16 @@ my $tmp_check = &check_status;
 if( $tmp_check =~ /[\d]+/ ) { exit; }
 else
 {
-	print "Install sys-snap to '/root/system-snapshot/' (y/n)?:";
+	print "Start sys-snap logging to '/root/system-snapshot/' (y/n)?:";
 	my $choice = "0";
         $choice = <STDIN>;
         while ($choice !~ /[yn]/i ) {
-        	print "Install sys-snap to '/root/system-snapshot/' (y/n)?:";
+        	print "Start sys-snap logging to '/root/system-snapshot/' (y/n)?:";
                 $choice = <STDIN>;
                 chomp ($choice);
 	}
         if($choice =~ /[y]/i) {
-		print "Starting install...\n";
+		print "Starting...\n";
 	}
         else { print "Exiting...\n"; exit; }
 }

@@ -49,7 +49,8 @@ sub loadavg {
 	for my $i (0 .. @ARGV-1) {
 		if($ARGV[$i] =~ /^\d+:\d+$/ && !defined $time1 && !defined $time2) { $time1 = $ARGV[$i]; }
 		elsif($ARGV[$i] =~ /^\d+:\d+$/ && defined $time1 && !defined $time2) { $time2 = $ARGV[$i]; }
-		if($ARGV[$i] =~ /i=(\d+)/) { $interval = $1; }
+		if($ARGV[$i] =~ /--i=(\d+)/) { $interval = $1; }
+		elsif ($ARGV[$i] =~ /^--i$/ && $ARGV[$i+1] =~ /^\d+$/) { $interval = $ARGV[$i+1]; }
 	}
 
 	if($interval > 60 || $interval < 0) { $interval = 10; }

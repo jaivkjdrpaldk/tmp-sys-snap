@@ -10,9 +10,9 @@ If you do not have the 'wget' program you can install it by running:
 yum install -y wget
 ```
 
-To install the program run. It will ask for confirmation to install:
+To start start sys-snap using this command. It will ask for confirmation to start:
 ```
-cd /root/ && chmod 744 sys-snap.pl && perl sys-snap.pl --install
+cd /root/ && chmod 744 sys-snap.pl && perl sys-snap.pl --start
 ```
 
 Sys-snap will run in the background. Logs will be written to /root/sys-snapshot/ every minute. Every hour a new folder with the current hour will be created. After 24 hours the folder should look like this:
@@ -45,43 +45,51 @@ perl sys-snap.pl --print 1:00 2:00
 Example output from the above command.
 ***
 <pre>
-user: dovecot        
-        cpu-score: 0.20         
-        memory-score: 2.40        
+user: root
+        cpu-score: 88.70
+        memory-score: 80.50
 
-user: dovenull       
-        cpu-score: 0.00         
-        memory-score: 24.40       
+user: munin
+        cpu-score: 56.30
+        memory-score: 7.70
 
-user: mailnull       
-        cpu-score: 0.00         
-        memory-score: 5.30        
+user: dovecot
+        cpu-score: 0.40
+        memory-score: 2.30
 
-user: munin          
-        cpu-score: 65.10        
-        memory-score: 6.00        
+user: mailnull
+        cpu-score: 0.00
+        memory-score: 0.00
 
-user: mysql          
-        cpu-score: 432.60         
-        memory-score: 1362.30     
+user: nobody
+        cpu-score: 0.00
+        memory-score: 168.10
 
-user: named          
-        cpu-score: 0.00         
-        memory-score: 0.00        
+user: mysql
+        cpu-score: 0.00
+        memory-score: 28.80
 
-user: nobody         
-        cpu-score: 35.00         
-        memory-score: 135.70      
+user: named
+        cpu-score: 0.00
+        memory-score: 2.50
 
-user: root           
-        cpu-score: 83.70        
-        memory-score: 607.60 
+user: mailman
+        cpu-score: 0.00
+        memory-score: 48.80
+
+user: sshd
+        cpu-score: 0.00
+        memory-score: 0.00
+
+user: dovenull
+        cpu-score: 0.00
+        memory-score: 13.30
 </pre>
 ***
 
-This is an alphabetical list of users, with the CPU and Memory usage they had during the time range. A larger score indicates larger resource usage. Many Apache processes will run as the 'nobody' user.
+This list will be sorted by per user CPU usage, with the CPU and Memory usage they had during the time range. A larger score indicates larger resource usage. Many Apache processes will run as the 'nobody' user.
 
-To print the processes each user was running during that time, add the 'v' flag to the end of the command.
+To print the processes each user was running during that time, add the 'v' or '--v' flag.
 ```
 perl sys-snap.pl --print 1:00 2:00 v
 ```
@@ -89,16 +97,14 @@ perl sys-snap.pl --print 1:00 2:00 v
 Example output from the above command:
 ***
 <pre>
-user: dovecot         
-	memory-score: 84.30       memory-score:
-		M: 84.30 proc: \_ dovecot/auth
-		M: 0.00 proc: \_ dovecot/anvil
-
-	cpu-score: 6.90      
-		C: 6.90 proc: \_ dovecot/auth
-		C: 0.00 proc: \_ dovecot/anvil
-		
-user: munin           
+user: munin
+	cpu-score: 106.40
+		C: 59.90 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-update
+		C: 21.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-limits
+		C: 17.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-graph --cron
+		C: 8.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-html
+		C: 0.50 proc: \_ /usr/local/cpanel/3rdparty/share/munin/munin-update [Munin::Master::UpdateWorker<server.com;host.server.com>]
+		C: 0.00 proc: \_ /bin/sh /usr/local/cpanel/3rdparty/perl/514/bin/munin-cron
 	memory-score: 6.70        memory-score:
 		M: 3.30 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-update
 		M: 1.80 proc: \_ /usr/local/cpanel/3rdparty/share/munin/munin-update [Munin::Master::UpdateWorker<server.com;host.server.com>]
@@ -106,29 +112,60 @@ user: munin
 		M: 0.60 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-graph --cron
 		M: 0.30 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-html
 		M: 0.00 proc: \_ /bin/sh /usr/local/cpanel/3rdparty/perl/514/bin/munin-cron
+user: dovecot
+	cpu-score: 6.90
+		C: 6.90 proc: \_ dovecot/auth
+		C: 0.00 proc: \_ dovecot/anvil
 
-	cpu-score: 106.40    
-		C: 59.90 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-update
-		C: 21.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-limits
-		C: 17.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-graph --cron
-		C: 8.00 proc: \_ /usr/local/cpanel/3rdparty/perl/514/bin/perl /usr/local/cpanel/3rdparty/share/munin/munin-html
-		C: 0.50 proc: \_ /usr/local/cpanel/3rdparty/share/munin/munin-update [Munin::Master::UpdateWorker<server.com;host.server.com>]
-		C: 0.00 proc: \_ /bin/sh /usr/local/cpanel/3rdparty/perl/514/bin/munin-cron
+	memory-score: 84.30       memory-score:
+		M: 84.30 proc: \_ dovecot/auth
+		M: 0.00 proc: \_ dovecot/anvil
 </pre>
 ***
+
+You can remove the cpu or memory output from the verbose --print output by using '--no-cpu' or '--no-memory'.
+```
+perl sys-snap.pl --print 1:00 2:00 v --no-cpu
+```
+
+If you want to limit the number of lines under each CPU and memory section, use the '--max-lines' flag.
+```
+perl sys-snap.pl --print 1:00 2:00 v --max-lines=10
+```
 
 This command will check if sys-snap is running.
 ```
 perl sys-snap.pl --check
 ```
 
-To stop sys-snap run this from the directory sys-snap.pl was downloaded to. It will ask for confirmatino to kill the process.
+To stop sys-snap run this from the directory sys-snap.pl was downloaded to. It will ask for confirmatino to stop the process.
 ```
-perl sys-snap.pl --kill
+perl sys-snap.pl --stop
 ```
 
-You can use the 'sar' command to determin high load intervals which need to be looked at in closer detail.
-Output from the 'sar' command: 
+To print load information for an interval use '--loadavg time1 time2'.
+***
+<pre>
+perl sys-snap.pl --loadavg 1:00 2:00
+
+Time    1min-avg        5min-avg        15min-avg
+1:00    0.00            0.02            0.02
+1:10    0.01            0.04            0.04
+1:20    0.06            0.15            0.08
+1:30    0.14            0.04            0.02
+1:40    0.06            0.03            0.02
+1:50    0.00            0.02            0.00
+2:00    0.31            0.09            0.02
+</pre>
+***
+
+By default --loadavg prints load information in 10 minute increments. You can change this from 1-60 minutes using '--i'.
+```
+perl sys-snap.pl --loadavg 1:00 2:00 --i=5
+```
+
+You can also use the 'sar' command to determin high load intervals which need to be looked at in closer detail.
+Output from the 'sar' command:
 ***
 <pre>
 Linux 2.6 (host.server.com)    01/02/2101      _x86_64_        (24 CPU)
@@ -141,7 +178,7 @@ Linux 2.6 (host.server.com)    01/02/2101      _x86_64_        (24 CPU)
 12:50:01 AM     all     75.40      0.27     30.17      1.01      0.04     00.12
 01:00:02 AM     all     55.38      0.33     25.16      0.90      0.02     20.10
 01:10:01 AM     all      0.41      0.30      0.17      0.01      0.05     99.06
-01:20:01 AM     all      0.39      1.29      0.29      0.13      0.05     97.84 
+01:20:01 AM     all      0.39      1.29      0.29      0.13      0.05     97.84
 </pre>
 ***
 

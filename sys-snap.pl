@@ -1,3 +1,16 @@
+# Copyright (C) 2015 Bryan Christensen
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #!/usr/bin/perl
 
 use warnings;
@@ -9,6 +22,7 @@ my $usage = <<"ENDTXT";
 USAGE: ./sys-snap.pl [options]
 	--start : Creates, disowns, and drops 'sys-snap.pl --start' process into the background
 	--print <start-time end-time>: Where time HH:MM, prints basic usage by default
+	--v | v : verbose output from --print 
 	--check : Checks if sys-snap is running
 	--stop : tries to kill process
 	--loadavg <start-time end-time>: Where time HH:MM, prints load average for time period - default 10 min interval
@@ -17,31 +31,15 @@ USAGE: ./sys-snap.pl [options]
 	--no-mem | --nm : skips memory output
 ENDTXT
 
-
-#my $cmd_input;
-#if(!defined $ARGV[0]) { print $usage; exit;}
-#if ($ARGV[0] =~ m/[A-Za-z0-9\-]*/) {
-#	$cmd_input = $ARGV[0];
-#}
-
 foreach (@ARGV) {
-	if ($_ eq "--start") { &run_install; exit;}
-	elsif ($_ eq "--stop") { &kill; exit;}
-	elsif ($_ eq "--check") { &check_status; exit;}
+	if ($_ eq "--start") { run_install(); exit;}
+	elsif ($_ eq "--stop") { stop_syssnap(); exit;}
+	elsif ($_ eq "--check") { check_status(); exit;}
 	elsif ($_ eq "--print") { snap_print_range(); exit;}
-	elsif ($_ eq "--loadavg") { &loadavg; exit;}
+	elsif ($_ eq "--loadavg") { loadavg(); exit;}
 }
 
 print $usage; exit;
-
-#switch ($cmd_input) {
-#	case "--start" { &run_install; }
-#	case "--print" { &snap_print_range($ARGV[1], $ARGV[2], $ARGV[3], $ARGV[4]); }
-#	case "--check" { &check_status; exit; }
-#	case "--stop" { &kill; exit;}
-#	case "--loadavg" { &loadavg($ARGV[1], $ARGV[2]); }
-#	else { print $usage; exit; }
-#}
 
 sub loadavg {
 	#return;
@@ -84,7 +82,7 @@ sub loadavg {
 	}
 }
 
-sub kill {
+sub stop_syssnap {
 	my $pid;
 	# prevent check_status from printing to terminal
 	{
@@ -262,19 +260,11 @@ foreach my $user (sort keys %process_list_data) {
 	}
 }
 
-# create hash of sorted arrays per user
-# print baisc usage appended with sorted arrays
-#my %users_sorted_mem;
-#my %users_sorted_cpu;
-
 my $sort_param;
 if ($print_cpu) { $sort_param = "cpu"; }
 else { $sort_param = "memory"; }
 
 foreach my $user ( sort { $basic_usage{$b}->{$sort_param} <=> $basic_usage{$a}->{$sort_param} } keys %basic_usage ) {
-
-#my $value = $basic_usage{$key};
-		#printf( "user: %-15s\n\tcpu-score: %-12.2f \n\tmemory-score: %-12.2f\n\n", $key, $value->{cpu}, $value->{memory} );
 
 	printf "user: %-15s", $user;
 
@@ -312,30 +302,6 @@ foreach my $user ( sort { $basic_usage{$b}->{$sort_param} <=> $basic_usage{$a}->
 }
 
 exit;
-
-#foreach my $user (keys %users_wmemory_process) {
-#	my @sorted_cpu = sort { $users_wcpu_process{$user}{$b} <=>
-#			     $users_wcpu_process{$user}{$a} } keys %{$users_wcpu_process{$user}};
-
-#	my @sorted_mem = sort { $users_wmemory_process{$user}{$b} <=>
-#			     $users_wmemory_process{$user}{$a} } keys %{$users_wmemory_process{$user}};
-
-#	printf "user: %-15s \n\tmemory-score: %-11.2f\n", $user, $basic_usage{$user}{'memory'};
-
-#	for (@sorted_mem) {
-#		printf "\t\tM: %4.2f proc: ", $users_wmemory_process{$user}{$_};
-#		print "$_\n";
-#	}
-
-#	printf "\n\tcpu-score: %-10.2f\n", $basic_usage{$user}{'cpu'};
-
-#	for (@sorted_cpu) {
-#		printf "\t\tC: %4.2f proc: ", $users_wcpu_process{$user}{$_};
-#		print "$_\n";
-#	}
-#	print "\n";
-################
-
 
 sub run_basic {
 	my $tmp = shift;

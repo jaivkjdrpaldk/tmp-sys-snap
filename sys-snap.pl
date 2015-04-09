@@ -13,6 +13,8 @@ USAGE: ./sys-snap.pl [options]
 	--stop : tries to kill process
 	--loadavg <start-time end-time>: Where time HH:MM, prints load average for time period - default 10 min interval
 	--max-lines : max number of processes printed per mem/cpu section
+	--no-cpu | --nc : skips CPU output
+	--no-mem | --nm : skips memory output
 ENDTXT
 
 
@@ -253,7 +255,6 @@ if ( !(defined $detail_level) || $detail_level eq 'b') { &run_basic(\%basic_usag
 
 # adding up memory and CPU usage per user's process
 foreach my $user (sort keys %process_list_data) {
-
 	foreach my $process (sort keys %{ $process_list_data{$user} }) {
 
 		$users_wcpu_process{$user}{$process} += $process_list_data{$user}{$process}{'cpu'};
@@ -263,16 +264,15 @@ foreach my $user (sort keys %process_list_data) {
 
 # create hash of sorted arrays per user
 # print baisc usage appended with sorted arrays
-my %users_sorted_mem;
-my %users_sorted_cpu;
+#my %users_sorted_mem;
+#my %users_sorted_cpu;
 
-foreach my $user ( sort { $basic_usage{$b}->{cpu} <=> $basic_usage{$a}->{cpu} } keys %basic_usage ) {
+my $sort_param;
+if ($print_cpu) { $sort_param = "cpu"; }
+else { $sort_param = "memory"; }
 
-		my @sorted_cpu = sort { $users_wcpu_process{$user}{$b} <=>
-			$users_wcpu_process{$user}{$a} } keys %{$users_wcpu_process{$user}};
+foreach my $user ( sort { $basic_usage{$b}->{$sort_param} <=> $basic_usage{$a}->{$sort_param} } keys %basic_usage ) {
 
-		my @sorted_mem = sort { $users_wmemory_process{$user}{$b} <=>
-			$users_wmemory_process{$user}{$a} } keys %{$users_wmemory_process{$user}};
 #my $value = $basic_usage{$key};
 		#printf( "user: %-15s\n\tcpu-score: %-12.2f \n\tmemory-score: %-12.2f\n\n", $key, $value->{cpu}, $value->{memory} );
 
@@ -280,6 +280,9 @@ foreach my $user ( sort { $basic_usage{$b}->{cpu} <=> $basic_usage{$a}->{cpu} } 
 
 	my $num_lines=0;
 	if($print_cpu){
+
+		my @sorted_cpu = sort { $users_wcpu_process{$user}{$b} <=>
+			$users_wcpu_process{$user}{$a} } keys %{$users_wcpu_process{$user}};
 
 		printf "\n\tcpu-score: %-10.2f\n", $basic_usage{$user}{'cpu'};
 		for (@sorted_cpu) {
@@ -292,6 +295,10 @@ foreach my $user ( sort { $basic_usage{$b}->{cpu} <=> $basic_usage{$a}->{cpu} } 
 
 	$num_lines=0;
 	if($print_memory) {
+
+		my @sorted_mem = sort { $users_wmemory_process{$user}{$b} <=>
+			$users_wmemory_process{$user}{$a} } keys %{$users_wmemory_process{$user}};
+
 		printf "\n\tmemory-score: %-11.2f\n", $basic_usage{$user}{'memory'};
 		for (@sorted_mem) {
 			printf "\t\tM: %4.2f proc: ", $users_wmemory_process{$user}{$_};
@@ -302,7 +309,7 @@ foreach my $user ( sort { $basic_usage{$b}->{cpu} <=> $basic_usage{$a}->{cpu} } 
 	}
        print "\n";
 
-	}
+}
 
 exit;
 

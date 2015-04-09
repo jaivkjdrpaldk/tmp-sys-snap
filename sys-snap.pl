@@ -8,31 +8,52 @@ use Switch;
 my $usage = <<"ENDTXT";
 USAGE: ./sys-snap.pl [options]
 	--start : Creates, disowns, and drops 'sys-snap.pl --start' process into the background
-	--print <start-time end-time> <flag>: Where time HH:MM, prints basic usage by default, v for verbose
+	--print <start-time end-time>: Where time HH:MM, prints basic usage by default
 	--check : Checks if sys-snap is running
 	--stop : tries to kill process
-	--loadavg <start-time end-time> <flag>: Where time HH:MM, prints load average for time period, v for verbose
+	--loadavg <start-time end-time>: Where time HH:MM, prints load average for time period - default 10 min interval
+	--max-lines : max number of processes printed per mem/cpu section
 ENDTXT
 
-my $cmd_input;
-if(!defined $ARGV[0]) { print $usage; exit;}
-if ($ARGV[0] =~ m/[A-Za-z0-9\-]*/) {
-	$cmd_input = $ARGV[0];
+
+#my $cmd_input;
+#if(!defined $ARGV[0]) { print $usage; exit;}
+#if ($ARGV[0] =~ m/[A-Za-z0-9\-]*/) {
+#	$cmd_input = $ARGV[0];
+#}
+
+foreach (@ARGV) {
+	if ($_ eq "--start") { &run_install; exit;}
+	elsif ($_ eq "--stop") { &kill; exit;}
+	elsif ($_ eq "--check") { &check_status; exit;}
+	elsif ($_ eq "--print") { snap_print_range(); exit;}
+	elsif ($_ eq "--loadavg") { &loadavg; exit;}
 }
 
-switch ($cmd_input) {
-	case "--start" { &run_install; }
-	case "--print" { &snap_print_range($ARGV[1], $ARGV[2], $ARGV[3]); }
-	case "--check" { &check_status; exit; }
-	case "--stop" { &kill; exit;}
-	case "--loadavg" { &loadavg($ARGV[1], $ARGV[2]); }
-	else { print $usage; exit }
-}
+print $usage; exit;
+
+#switch ($cmd_input) {
+#	case "--start" { &run_install; }
+#	case "--print" { &snap_print_range($ARGV[1], $ARGV[2], $ARGV[3], $ARGV[4]); }
+#	case "--check" { &check_status; exit; }
+#	case "--stop" { &kill; exit;}
+#	case "--loadavg" { &loadavg($ARGV[1], $ARGV[2]); }
+#	else { print $usage; exit; }
+#}
 
 sub loadavg {
+	#return;
+	my $time1;
+	my $time2;
+	my $interval = 10;
 
-	my $time1 = shift;
-	my $time2 = shift;
+	for my $i (0 .. @ARGV-1) {
+		if($ARGV[$i] =~ /^\d+:\d+$/ && !defined $time1 && !defined $time2) { $time1 = $ARGV[$i]; }
+		elsif($ARGV[$i] =~ /^\d+:\d+$/ && defined $time1 && !defined $time2) { $time2 = $ARGV[$i]; }
+		if($ARGV[$i] =~ /i=(\d+)/) { $interval = $1; }
+	}
+
+	if($interval > 60 || $interval < 0) { $interval = 10; }
 	my $root_dir = "/root";
 	my $snapshot_dir = "/system-snapshot";
 	my ($time1_hour, $time1_minute, $time2_hour, $time2_minute) = &parse_check_time($time1, $time2);
@@ -40,8 +61,9 @@ sub loadavg {
 	my @snap_log_files = &get_range($root_dir, $snapshot_dir, $time1_hour, $time1_minute, $time2_hour, $time2_minute);
 
 	print "Time\t1min-avg\t5min-avg\t15min-avg\n";
-	foreach my $file_name (@snap_log_files) {
 
+	#foreach my $file_name (@snap_log_files) {
+	foreach my $file_name (@snap_log_files) {
 # load information is currently printed to the first line
 # only need to read first line
 		open (my $FILE, "<", $file_name) or next; #die "Couldn't open file: $!";
@@ -53,7 +75,7 @@ sub loadavg {
 		($hour, $min, $avg1min, $avg5min, $avg15min) = $string =~ m{^\d+\s+(\d+)\s+(\d+)\s+Load Average: (\d+\.\d+)\s(\d+\.\d+)\s(\d+\.\d+)\s.*$};
 		#($user, $cpu, $memory, $command) = $l =~  m{^(\w+)\s+\d+\s+(\d{1,2}\.\d)\s+(\d{1,2}\.\d).*\d{1,2}:\d{2}\s+(.*)$};
 
-		if (defined $hour && defined $min & defined $avg1min && defined $avg5min && defined $avg15min) {
+		if (defined $hour && defined $min & defined $avg1min && defined $avg5min && defined $avg15min && ($min % $interval == 0) ){
 			$min = "0" . $min if ($min =~ m{^\d$});
 			print "$hour:$min\t$avg1min\t\t$avg5min\t\t$avg15min\n";
 		}
@@ -126,14 +148,11 @@ sub check_status {
 		}
 		if( !defined($running_pid) ) { print "Could not find PID, process might be running.\n"; return "on"; }
 
-
 		print "Sys-snap is running, PID: $running_pid\n";
 		return $running_pid;
 	}
 	elsif (defined $pids[0]) {
 
-		#my $check_process = `ps -e -o pid | grep "[s]ys-snap.pl --check"`;
-		#if $
 		if( $pids[0] =~ /^\s*([0-9]+)\s+root\s+(\/usr\/bin\/perl\s+\.\/|perl\s+)sys-snap\.pl\s+--start/) {
 
 			my $tmp_pid = $1;
@@ -173,11 +192,33 @@ sub parse_check_time {
 
 	if (defined $time1_hour && defined $time2_hour ) { return ($time1_hour, $time1_minute, $time2_hour, $time2_minute); }
 	return 0;
-
 }
-# pro-scope 255 ACM caffeine
+
+
 {
 sub snap_print_range {
+
+my $time1;
+my $time2;
+my $detail_level="b";
+my $max_lines=75;
+my $print_cpu = "1";
+my $print_memory = "1";
+
+for my $i (0 .. @ARGV-1) {
+
+	if($ARGV[$i] =~ /^\d+:\d+$/ && !defined $time1 && !defined $time2) { $time1 = $ARGV[$i]; }
+	elsif($ARGV[$i] =~ /^\d+:\d+$/ && defined $time1 && !defined $time2) { $time2 = $ARGV[$i]; }
+
+	if ($ARGV[$i] eq "v" || $ARGV[$i] eq "--v") { $detail_level = "v"; }
+	if($ARGV[$i] =~ /^--max-lines=(\d+)$/) { $max_lines = $1; }
+	elsif($ARGV[$i] =~ /^--max-lines$/) { if ($ARGV[$i+1] =~ /^(\d+)$/) { $max_lines = $1;} }
+
+	if($ARGV[$i] =~ /^--no-cpu$/ || $ARGV[$i] =~ /^--nc$/) { $print_cpu=0 };
+	if($ARGV[$i] =~ /^--no-mem$/ || $ARGV[$i] =~ /^--nm$/) { $print_memory=0 };
+}
+
+if (!defined $time1 || !defined $time2) { print "Need 2 parameters, \"./snap-print start-time end-time\"\n"; exit;}
 
 use Time::Piece;
 use Time::Seconds;
@@ -189,38 +230,14 @@ my $snapshot_dir = '/system-snapshot';
 # and might be misleading. printing a warning might be apropriate in this scenario or having some other flag
 # to indicate this has happened
 my $newest_file = qx(ls -la ${root_dir}/system-snapshot/current);
-my $time1 = shift;
-my $time2 = shift;
-my $detail_level = shift;
 
-if (!defined $time1 || !defined $time2) { print "Need 2 parameters, \"./snap-print start-time end-time\"\n"; exit;}
-
-my ($time1_hour, $time1_minute, $time2_hour, $time2_minute);
-
-# make sub
-if ( ($time1_hour, $time1_minute) = $time1 =~ m{^(\d{1,2}):(\d{2})$}){
-	if($time1_hour >= 0 && $time1_hour <= 23 && $time1_minute >= 0 && $time1_minute <= 59) {
-		#print "$time1_hour $time1_minute\n";
-	} else { print "Fail: Fictitious time.\n"; exit; }
-
-} else { print "Fail: Could not parse start time\n"; exit; }
-
-if ( ($time2_hour, $time2_minute) = $time2 =~ m{(\d{1,2}):(\d{2})}){
-	if($time2_hour >= 0 && $time2_hour <= 23 && $time2_minute >= 0 && $time2_minute <= 59) {
-		#print "$time2_hour $time2_minute\n";
-	} else { print "Fail: Fictitious time.\n"; exit; }
-
-} else { print "Fail: Could not parse end time\n"; exit; }
-
+my ($time1_hour, $time1_minute, $time2_hour, $time2_minute) = &parse_check_time($time1, $time2);
 
 # get the files we want to read
 my @snap_log_files = &get_range($root_dir, $snapshot_dir, $time1_hour, $time1_minute, $time2_hour, $time2_minute);
 
-# read 'em
 my ($tmp1, $tmp2) = &read_logs(\@snap_log_files);
 
-## waste resources dereffing stuff
-## going to turn all this stuff into classes later
 # users cumulative CPU and Mem score
 my %basic_usage = %$tmp1;
 
@@ -248,33 +265,96 @@ foreach my $user (sort keys %process_list_data) {
 # print baisc usage appended with sorted arrays
 my %users_sorted_mem;
 my %users_sorted_cpu;
-foreach my $user (sort keys %users_wmemory_process) {
 
-	my @sorted_cpu = sort { $users_wcpu_process{$user}{$b} <=>
-			     $users_wcpu_process{$user}{$a} } keys %{$users_wcpu_process{$user}};
+foreach my $user ( sort { $basic_usage{$b}->{cpu} <=> $basic_usage{$a}->{cpu} } keys %basic_usage ) {
 
-	my @sorted_mem = sort { $users_wmemory_process{$user}{$b} <=>
-			     $users_wmemory_process{$user}{$a} } keys %{$users_wmemory_process{$user}};
+		my @sorted_cpu = sort { $users_wcpu_process{$user}{$b} <=>
+			$users_wcpu_process{$user}{$a} } keys %{$users_wcpu_process{$user}};
 
-	printf "user: %-15s \n\tmemory-score: %-11.2f\n", $user, $basic_usage{$user}{'memory'};
+		my @sorted_mem = sort { $users_wmemory_process{$user}{$b} <=>
+			$users_wmemory_process{$user}{$a} } keys %{$users_wmemory_process{$user}};
+#my $value = $basic_usage{$key};
+		#printf( "user: %-15s\n\tcpu-score: %-12.2f \n\tmemory-score: %-12.2f\n\n", $key, $value->{cpu}, $value->{memory} );
 
-	for (@sorted_mem) {
-		printf "\t\tM: %4.2f proc: ", $users_wmemory_process{$user}{$_};
-		print "$_\n";
+	printf "user: %-15s", $user;
+
+	my $num_lines=0;
+	if($print_cpu){
+
+		printf "\n\tcpu-score: %-10.2f\n", $basic_usage{$user}{'cpu'};
+		for (@sorted_cpu) {
+			printf "\t\tC: %4.2f proc: ", $users_wcpu_process{$user}{$_};
+			print "$_\n";
+			if ($num_lines >= $max_lines-1) { last; }
+			else { $num_lines += 1; }
+		}
 	}
 
-	printf "\n\tcpu-score: %-10.2f\n", $basic_usage{$user}{'cpu'};
-
-	for (@sorted_cpu) {
-		printf "\t\tC: %4.2f proc: ", $users_wcpu_process{$user}{$_};
-		print "$_\n";
+	$num_lines=0;
+	if($print_memory) {
+		printf "\n\tmemory-score: %-11.2f\n", $basic_usage{$user}{'memory'};
+		for (@sorted_mem) {
+			printf "\t\tM: %4.2f proc: ", $users_wmemory_process{$user}{$_};
+			print "$_\n";
+			if ($num_lines >= $max_lines-1) { last; }
+			else { $num_lines += 1; }
+		}
 	}
-	print "\n";
-}
+       print "\n";
+
+	}
 
 exit;
 
+#foreach my $user (keys %users_wmemory_process) {
+#	my @sorted_cpu = sort { $users_wcpu_process{$user}{$b} <=>
+#			     $users_wcpu_process{$user}{$a} } keys %{$users_wcpu_process{$user}};
+
+#	my @sorted_mem = sort { $users_wmemory_process{$user}{$b} <=>
+#			     $users_wmemory_process{$user}{$a} } keys %{$users_wmemory_process{$user}};
+
+#	printf "user: %-15s \n\tmemory-score: %-11.2f\n", $user, $basic_usage{$user}{'memory'};
+
+#	for (@sorted_mem) {
+#		printf "\t\tM: %4.2f proc: ", $users_wmemory_process{$user}{$_};
+#		print "$_\n";
+#	}
+
+#	printf "\n\tcpu-score: %-10.2f\n", $basic_usage{$user}{'cpu'};
+
+#	for (@sorted_cpu) {
+#		printf "\t\tC: %4.2f proc: ", $users_wcpu_process{$user}{$_};
+#		print "$_\n";
+#	}
+#	print "\n";
+################
+
+
 sub run_basic {
+	my $tmp = shift;
+	#my $basic_usage;
+	my %basic_usage;
+	%basic_usage = %$tmp;
+
+	foreach my $key (
+			sort { $basic_usage{$b}->{cpu} <=> $basic_usage{$a}->{cpu} }
+			keys %basic_usage
+			)
+	{
+		my $value = $basic_usage{$key};
+		printf( "user: %-15s\n\tcpu-score: %-12.2f \n\tmemory-score: %-12.2f\n\n", $key, $value->{cpu}, $value->{memory} );
+	}
+
+	return;
+	#my %basic_usage = shift;
+	foreach my $user (sort keys %basic_usage){
+		printf "user: %-15s\n\tcpu-score: %-12.2f \n\tmemory-score: %-12.2f\n\n", $user, $basic_usage{$user}{'cpu'}, $basic_usage{$user}{'memory'};
+	}
+
+	return;
+}
+
+sub run_basic_orig {
 	my $tmp = shift;
 	my %basic_usage = %$tmp;
 	#my %basic_usage = shift;

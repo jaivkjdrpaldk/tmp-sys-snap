@@ -1,4 +1,5 @@
-# Copyright (C) 2015 Bryan Christensen
+#!/usr/bin/perl
+# Copyright (C) 2015
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -11,12 +12,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-#!/usr/bin/perl
+
+# Author Bryan Christensen
 
 use warnings;
 use strict;
-use Switch;
-#use POSIX qw(setsid);
 
 my $usage = <<"ENDTXT";
 USAGE: ./sys-snap.pl [options]
@@ -24,7 +24,7 @@ USAGE: ./sys-snap.pl [options]
 	--print <start-time end-time>: Where time HH:MM, prints basic usage by default
 	--v | v : verbose output from --print 
 	--check : Checks if sys-snap is running
-	--stop : tries to kill process
+	--stop : stops sys-snap after confirming PID info
 	--loadavg <start-time end-time>: Where time HH:MM, prints load average for time period - default 10 min interval
 	--max-lines : max number of processes printed per mem/cpu section
 	--no-cpu | --nc : skips CPU output
@@ -42,7 +42,6 @@ foreach (@ARGV) {
 print $usage; exit;
 
 sub loadavg {
-	#return;
 	my $time1;
 	my $time2;
 	my $interval = 10;
@@ -64,16 +63,14 @@ sub loadavg {
 
 	#foreach my $file_name (@snap_log_files) {
 	foreach my $file_name (@snap_log_files) {
-# load information is currently printed to the first line
-# only need to read first line
+	# load information is currently printed to the first line
+	# only need to read first line
 		open (my $FILE, "<", $file_name) or next; #die "Couldn't open file: $!";
 		my $string = <$FILE>;
 		close ($FILE);
 
-#my ($user, $cpu, $memory, $command);
 		my ($avg1min, $avg5min, $avg15min, $hour, $min);
 		($hour, $min, $avg1min, $avg5min, $avg15min) = $string =~ m{^\d+\s+(\d+)\s+(\d+)\s+Load Average: (\d+\.\d+)\s(\d+\.\d+)\s(\d+\.\d+)\s.*$};
-		#($user, $cpu, $memory, $command) = $l =~  m{^(\w+)\s+\d+\s+(\d{1,2}\.\d)\s+(\d{1,2}\.\d).*\d{1,2}:\d{2}\s+(.*)$};
 
 		if (defined $hour && defined $min & defined $avg1min && defined $avg5min && defined $avg15min && ($min % $interval == 0) ){
 			$min = "0" . $min if ($min =~ m{^\d$});
@@ -178,14 +175,14 @@ sub parse_check_time {
 
 	if ( ($time1_hour, $time1_minute) = $time1 =~ m{^(\d{1,2}):(\d{2})$}){
 		if($time1_hour >= 0 && $time1_hour <= 23 && $time1_minute >= 0 && $time1_minute <= 59) {
-#print "$time1_hour $time1_minute\n";
+			#print "$time1_hour $time1_minute\n";
 		} else { print "Fail: Fictitious time.\n"; exit; }
 
 	} else { print "Fail: Could not parse start time\n"; exit; }
 
 	if ( ($time2_hour, $time2_minute) = $time2 =~ m{(\d{1,2}):(\d{2})}){
 		if($time2_hour >= 0 && $time2_hour <= 23 && $time2_minute >= 0 && $time2_minute <= 59) {
-			#$time2_hour $time2_minute\n";
+			#print $time2_hour $time2_minute\n";
 		} else { print "Fail: Fictitious time.\n"; exit; }
 
 	} else { print "Fail: Could not parse end time\n"; exit; }
@@ -305,7 +302,6 @@ exit;
 
 sub run_basic {
 	my $tmp = shift;
-	#my $basic_usage;
 	my %basic_usage;
 	%basic_usage = %$tmp;
 
@@ -318,24 +314,7 @@ sub run_basic {
 		printf( "user: %-15s\n\tcpu-score: %-12.2f \n\tmemory-score: %-12.2f\n\n", $key, $value->{cpu}, $value->{memory} );
 	}
 
-	return;
-	#my %basic_usage = shift;
-	foreach my $user (sort keys %basic_usage){
-		printf "user: %-15s\n\tcpu-score: %-12.2f \n\tmemory-score: %-12.2f\n\n", $user, $basic_usage{$user}{'cpu'}, $basic_usage{$user}{'memory'};
-	}
-
-	return;
-}
-
-sub run_basic_orig {
-	my $tmp = shift;
-	my %basic_usage = %$tmp;
-	#my %basic_usage = shift;
-	foreach my $user (sort keys %basic_usage){
-		printf "user: %-15s\n\tcpu-score: %-12.2f \n\tmemory-score: %-12.2f\n\n", $user, $basic_usage{$user}{'cpu'}, $basic_usage{$user}{'memory'};
-	}
-
-	return;
+	exit;
 }
 
 ## should be rewritten to take parameters of log subsections to be read
@@ -433,19 +412,11 @@ sub get_range {
 
 	return @snap_log_files;
 }
-
-# log files have load average as first line
-# would be nifty to automatically find high ranges and then print stuff
 }
 }
 
-# despite this whole page I am still just scoped in a cage - Cilly Borgan
 {
 sub run_install {
-
-
-#my $is_running = `ps aux | grep '^root.*[s]ys-snap.pl --install'`;
-#if($is_running =~ m/.*\n.*\n/m) { print "Sys-snap is already running\n"; exit; }
 
 my $tmp_check = &check_status;
 if( $tmp_check =~ /[\d]+/ ) { exit; }
@@ -488,14 +459,6 @@ my $apache = 1;
 
 # If you want extended data, set this to 1
 my $max_data = 0;
-
-############################################################################
-# If you don't know what your doing, don't change anything below this line #
-############################################################################
-
-##########
-# Set Up #
-##########
 
 # Get the date, hour, and min for various tasks
 my ( $sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst ) = localtime(time);

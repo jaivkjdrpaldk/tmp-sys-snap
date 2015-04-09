@@ -1,4 +1,17 @@
-Sys-snap logs resource usage to help troubleshoot load issues. Logs are stored in '/root/system-snapshot'. Log size varies depending on the number of users and processes running. Small to medium servers will use about 50-250MB of storage. 
+Sys-snap logs resource usage to help troubleshoot load issues. Sys-snap logs data using these tools at one minute increments:
+=======
+- /proc/loadavg
+- /proc/meminfo
+- mstat 1 10
+- ps auwwxf
+- netstat -anp
+- mysqladmin proc
+- localhost/whm-server-status
+- http://localhost/server-status
+- lsof
+=======
+
+Logs are stored in '/root/system-snapshot'. Log size varies depending on the number of users and processes running. Small to medium servers will use about 50-250MB of storage.
 
 You can download the script to the '/root' directory by running this command:
 ```

@@ -99,6 +99,7 @@ Current process: 20081 root     perl sys-snap.pl --start
 Stop this process (y/n)?:y
 Stopping 20081
 [~]
+```
 <h2>
 Gathering data from sys-snap
 </h2>

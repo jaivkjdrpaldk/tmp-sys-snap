@@ -35,7 +35,7 @@ Sys-snap’s installation is incredibly simple two step process: Download the sc
 </p>
 ```
 wget -O /root/sys-snap.pl https://raw.githubusercontent.com/cPanelTechs/SysSnapv2/master/sys-snap.pl
-cd /root/ && chmod 744 sys-snap.pl && perl sys-snap.pl --start]]>
+cd /root/ && chmod 744 sys-snap.pl && perl sys-snap.pl --start
 ```
 <p>
 Once installed, the script continues to run on the server until you stop it, or until the server reboots. After a reboot, if you want the script to resume recording data, you would need to start it again.
